@@ -6,6 +6,7 @@ st.set_page_config(page_title="BI Dashboard", layout="wide")
 
 st.title("📊 Business Intelligence Dashboard")
 
+# Test
 # Sidebar navigation
 section = st.sidebar.selectbox("Select Section", ["Sales", "Inventory", "Performance"])
 
