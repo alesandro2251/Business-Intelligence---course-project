@@ -1,0 +1,4 @@
+product,sku,stock,reorder_point
+Product A,SKU001,50,20
+Product B,SKU002,15,30
+
