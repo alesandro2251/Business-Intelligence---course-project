@@ -10,22 +10,24 @@ st.title("📊 Business Intelligence Dashboard")
 # Sidebar navigation
 section = st.sidebar.selectbox("Select Section", ["Sales", "Inventory", "Performance"])
 
-# Sales Section
 if section == "Sales":
     st.header("📈 Sales Dashboard")
+
     sales_df = load_sales_data()
 
     with st.expander("➕ Add New Sale"):
         inventory_df = load_inventory_data()
-        existing_products = inventory_df["product"].unique().tolist()
+        product_options = inventory_df["product"].unique().tolist()
 
-        if existing_products:
-            new_product = st.selectbox("Product", existing_products)
+        if product_options:
+            new_product = st.selectbox("Product", product_options)
+        else:
+            new_product = st.text_input("Enter product name")
 
         new_region = st.text_input("Region")
         new_amount = st.number_input("Sales Amount", min_value=0)
         new_date = st.date_input("Date")
-        
+
         if st.button("Add Sale"):
             new_entry = {
                 "date": pd.to_datetime(new_date),
@@ -37,22 +39,49 @@ if section == "Sales":
             sales_df.to_csv("data/sales_data.csv", index=False)
             st.success("Sale added!")
 
-    st.dataframe(sales_df)
+            # 🔁 Refresh
+            sales_df = load_sales_data()
+
+    table_placeholder = st.empty()
+    table_placeholder.dataframe(sales_df)
+
+    with st.expander("🗑️ Delete Sale"):
+        if not sales_df.empty:
+            selected_index = st.selectbox("Select Sale Entry to Delete", sales_df.index)
+            selected_row = sales_df.loc[selected_index]
+            st.write(selected_row)
+
+            if st.button("Delete Sale"):
+                sales_df = sales_df.drop(selected_index).reset_index(drop=True)
+                sales_df.to_csv("data/sales_data.csv", index=False)
+                st.success("Sale entry deleted!")
+
+                # 🔁 Refresh
+                sales_df = load_sales_data()
+                table_placeholder.dataframe(sales_df)
+        else:
+            st.info("No sales data available to delete.")
 
     st.subheader("📊 Key Metrics")
     col1, col2 = st.columns(2)
     col1.metric("Total Sales", f"${sales_df['sales_amount'].sum():,.0f}")
-    col2.metric("Top Product", sales_df.groupby('product')['sales_amount'].sum().idxmax())
+    if not sales_df.empty:
+        col2.metric("Top Product", sales_df.groupby('product')['sales_amount'].sum().idxmax())
+    else:
+        col2.metric("Top Product", "N/A")
 
     st.subheader("📅 Filter by Date")
-    date_range = st.date_input("Select date range", 
-                               [sales_df["date"].min(), sales_df["date"].max()])
+    if not sales_df.empty:
+        min_date = sales_df["date"].min()
+        max_date = sales_df["date"].max()
+        date_range = st.date_input("Select date range", [min_date, max_date])
 
-    if len(date_range) == 2:
-        start_date, end_date = date_range
-        sales_df = sales_df[(sales_df['date'] >= pd.to_datetime(start_date)) &
-                            (sales_df['date'] <= pd.to_datetime(end_date))]
-
+        if len(date_range) == 2:
+            start_date, end_date = date_range
+            sales_df = sales_df[
+                (sales_df["date"] >= pd.to_datetime(start_date)) &
+                (sales_df["date"] <= pd.to_datetime(end_date))
+            ]
 
     st.plotly_chart(sales_by_month(sales_df))
     st.plotly_chart(product_sales_pie(sales_df))
@@ -60,6 +89,7 @@ if section == "Sales":
 # Inventory Section
 elif section == "Inventory":
     st.header("📦 Inventory Overview")
+
     inv_df = load_inventory_data()
 
     with st.expander("➕ Add New Product"):
@@ -78,7 +108,11 @@ elif section == "Inventory":
             inv_df.to_csv("data/inventory.csv", index=False)
             st.success("Product added!")
 
-    st.dataframe(inv_df)
+            # Refresh
+            inv_df = load_inventory_data()
+
+    table_placeholder = st.empty()
+    table_placeholder.dataframe(inv_df)
 
     with st.expander("🗑️ Delete Product"):
         if not inv_df.empty:
@@ -87,7 +121,10 @@ elif section == "Inventory":
                 inv_df = inv_df[inv_df['product'] != selected_product].reset_index(drop=True)
                 inv_df.to_csv("data/inventory.csv", index=False)
                 st.success(f"Product '{selected_product}' deleted!")
+
+                # Refresh
                 inv_df = load_inventory_data()
+                table_placeholder.dataframe(inv_df)
         else:
             st.info("No inventory data available to delete.")
 
@@ -100,7 +137,43 @@ elif section == "Inventory":
 # Performance Section
 elif section == "Performance":
     st.header("🏆 Performance Reports")
+
     perf_df = load_performance_data()
-    st.dataframe(perf_df)
+
+    with st.expander("➕ Add Employee Performance"):
+        employee = st.text_input("Employee Name")
+        month = st.text_input("Month (YYYY-MM)")
+        sales = st.number_input("Sales", min_value=0)
+        if st.button("Add Performance"):
+            new_perf = {
+                "employee": employee,
+                "month": month,
+                "sales": sales
+            }
+            perf_df = pd.concat([perf_df, pd.DataFrame([new_perf])], ignore_index=True)
+            perf_df.to_csv("data/performance.csv", index=False)
+            st.success("Performance added!")
+
+            perf_df = load_performance_data()
+
+    table_placeholder = st.empty()
+    table_placeholder.dataframe(perf_df)
+
+    with st.expander("🗑️ Delete Performance Entry"):
+        if not perf_df.empty:
+            selected_index = st.selectbox("Select Entry to Delete", perf_df.index)
+            selected_row = perf_df.loc[selected_index]
+            st.write(selected_row)
+
+            if st.button("Delete Performance"):
+                perf_df = perf_df.drop(selected_index).reset_index(drop=True)
+                perf_df.to_csv("data/performance.csv", index=False)
+                st.success("Performance entry deleted!")
+
+                perf_df = load_performance_data()
+                table_placeholder.dataframe(perf_df)
+        else:
+            st.info("No performance data available to delete.")
 
     st.plotly_chart(performance_bar(perf_df))
+

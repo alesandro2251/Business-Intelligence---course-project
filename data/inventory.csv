@@ -1,3 +1,3 @@
 product,sku,stock,reorder_point
-Product L,SKU023,50,60
 Product A,SKU001,30,20
+Test,SKU000,0,0
