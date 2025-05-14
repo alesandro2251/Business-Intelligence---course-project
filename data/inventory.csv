@@ -1,3 +1,4 @@
 product,sku,stock,reorder_point
 Product A,SKU001,30,20
 Test,SKU000,0,0
+Product B,SKU002,60,70
