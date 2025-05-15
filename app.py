@@ -1,13 +1,13 @@
 import streamlit as st
 from utils.data_loader import *
 from utils.charts import *
+from prophet import Prophet
+import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="BI Dashboard", layout="wide")
 
 st.title("📊 Business Intelligence Dashboard")
 
-# Test
-# Sidebar navigation
 section = st.sidebar.selectbox("Select Section", ["Sales", "Inventory", "Performance"])
 
 if section == "Sales":
@@ -39,7 +39,6 @@ if section == "Sales":
             sales_df.to_csv("data/sales_data.csv", index=False)
             st.success("Sale added!")
 
-            # 🔁 Refresh
             sales_df = load_sales_data()
 
     table_placeholder = st.empty()
@@ -56,7 +55,6 @@ if section == "Sales":
                 sales_df.to_csv("data/sales_data.csv", index=False)
                 st.success("Sale entry deleted!")
 
-                # 🔁 Refresh
                 sales_df = load_sales_data()
                 table_placeholder.dataframe(sales_df)
         else:
@@ -86,7 +84,30 @@ if section == "Sales":
     st.plotly_chart(sales_by_month(sales_df))
     st.plotly_chart(product_sales_pie(sales_df))
 
-# Inventory Section
+    # 🔮 SALES FORECASTING
+    st.subheader("🔮 Sales Forecast")
+    if not sales_df.empty:
+        forecast_period = st.slider("Forecast Days", 7, 90, 30)
+
+        df_prophet = sales_df.groupby("date")["sales_amount"].sum().reset_index()
+        df_prophet.columns = ['ds', 'y']
+
+        model = Prophet()
+        model.fit(df_prophet)
+
+        future = model.make_future_dataframe(periods=forecast_period)
+        forecast = model.predict(future)
+
+        # Plot forecast
+        fig1 = model.plot(forecast)
+        st.pyplot(fig1)
+
+        with st.expander("📊 Forecast Components"):
+            fig2 = model.plot_components(forecast)
+            st.pyplot(fig2)
+    else:
+        st.info("Not enough sales data to generate forecast.")
+
 elif section == "Inventory":
     st.header("📦 Inventory Overview")
 
@@ -108,7 +129,6 @@ elif section == "Inventory":
             inv_df.to_csv("data/inventory.csv", index=False)
             st.success("Product added!")
 
-            # Refresh
             inv_df = load_inventory_data()
 
     table_placeholder = st.empty()
@@ -122,7 +142,6 @@ elif section == "Inventory":
                 inv_df.to_csv("data/inventory.csv", index=False)
                 st.success(f"Product '{selected_product}' deleted!")
 
-                # Refresh
                 inv_df = load_inventory_data()
                 table_placeholder.dataframe(inv_df)
         else:
@@ -134,7 +153,6 @@ elif section == "Inventory":
     st.warning("🚨 Low Stock Items:")
     st.dataframe(low_stock)
 
-# Performance Section
 elif section == "Performance":
     st.header("🏆 Performance Reports")
 
