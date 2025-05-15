@@ -84,7 +84,6 @@ if section == "Sales":
     st.plotly_chart(sales_by_month(sales_df))
     st.plotly_chart(product_sales_pie(sales_df))
 
-    # 🔮 SALES FORECASTING
     st.subheader("🔮 Sales Forecast")
     if not sales_df.empty:
         forecast_period = st.slider("Forecast Days", 7, 90, 30)
@@ -98,7 +97,6 @@ if section == "Sales":
         future = model.make_future_dataframe(periods=forecast_period)
         forecast = model.predict(future)
 
-        # Plot forecast
         fig1 = model.plot(forecast)
         st.pyplot(fig1)
 
